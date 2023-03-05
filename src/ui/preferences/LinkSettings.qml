@@ -16,6 +16,8 @@ import QGroundControl               1.0
 import QGroundControl.Controls      1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Palette       1.0
+import QGroundControl.FactControls  1.0
+import QGroundControl.FactSystem    1.0
 
 Rectangle {
     id:                 _linkRoot
@@ -321,40 +323,28 @@ Rectangle {
                                 rowSpacing:     _rowSpacing
 
                                 QGCLabel {text: qsTr("User Name:")}
-                                QGCTextField {
-                                    id:                     login
+                                FactTextField {
+                                    id:             _userText
+                                    fact:           _usernameFact
+                                    width:          _editFieldWidth
+                                    visible:        _usernameFact.visible
+                                    placeholderText:qsTr("Enter Login")
+                                    Layout.fillWidth:    true
                                     Layout.preferredWidth:  _secondColumnWidth
-                                    Layout.fillWidth:       true
-//                                    text:                   editingConfig.name
-                                    placeholderText:        qsTr("Enter name")
+                                    property Fact _usernameFact: QGroundControl.settingsManager.appSettings.loginAirLink
                                 }
-//                                FactTextField {
-//                                    id:             _userText
-//                                    fact:           _usernameFact
-//                                    width:          _editFieldWidth
-//                                    visible:        _usernameFact.visible
-//                                    Layout.fillWidth:    true
-//                                    Layout.preferredWidth:  _secondColumnWidth
-//                                    property Fact _usernameFact: QGroundControl.settingsManager.airLinkSettings.userName
-//                                }
                                 QGCLabel { text: qsTr("Password:") }
-                                QGCTextField {
-                                    id:                     password
-                                    Layout.preferredWidth:  _secondColumnWidth
-                                    Layout.fillWidth:       true
-//                                    text:                   editingConfig.name
-                                    placeholderText:        qsTr("Enter password")
+                                FactTextField {
+                                    id:             _passText
+                                    fact:           _passwordFact
+                                    width:          _editFieldWidth
+                                    visible:        _passwordFact.visible
+                                    placeholderText:qsTr("Enter Password")
+                                    echoMode:       TextInput.Password
+                                    Layout.fillWidth:    true
+                                    Layout.minimumWidth: _editFieldWidth
+                                    property Fact _passwordFact: QGroundControl.settingsManager.appSettings.passAirLink
                                 }
-//                                FactTextField {
-//                                    id:             _passText
-//                                    fact:           _passwordFact
-//                                    width:          _editFieldWidth
-//                                    visible:        _passwordFact.visible
-//                                    echoMode:       TextInput.Password
-//                                    Layout.fillWidth:    true
-//                                    Layout.minimumWidth: _editFieldWidth
-//                                    property Fact _passwordFact: QGroundControl.settingsManager.airLinkSettings.password
-//                                }
                                 QGCLabel {
                                     text: "Forgot Your AirLink Password?"
                                     font.underline: true
