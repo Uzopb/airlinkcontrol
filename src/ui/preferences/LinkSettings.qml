@@ -46,6 +46,10 @@ Rectangle {
         settingsLoader.sourceComponent = commSettings
     }
 
+    function openAirLinkRegistration() {
+        settingsLoader.sourceComponent = airLinkRegistration
+    }
+
     Component.onDestruction: {
         if (settingsLoader.sourceComponent) {
             settingsLoader.sourceComponent = null
@@ -91,6 +95,11 @@ Rectangle {
         anchors.bottom:     parent.bottom
         anchors.margins:    ScreenTools.defaultFontPixelWidth
         anchors.horizontalCenter: parent.horizontalCenter
+        QGCButton {
+            text:       qsTr("Login")
+            enabled:    true //_currentSelection && !_currentSelection.link
+            onClicked:  _linkRoot.openAirLinkRegistration()
+        }
         QGCButton {
             width:      ScreenTools.defaultFontPixelWidth * 10
             text:       qsTr("Delete")
@@ -264,6 +273,124 @@ Rectangle {
                             }
                         }
 
+                        QGCButton {
+                            width:      ScreenTools.defaultFontPixelWidth * 10
+                            text:       qsTr("Cancel")
+                            onClicked: {
+                                settingsLoader.sourceComponent = null
+                                QGroundControl.linkManager.cancelConfigurationEditing(settingsLoader.editingConfig)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //---------------------------------------------
+    // AirLink Registration
+    Component {
+        id: airLinkRegistration
+        Rectangle {
+            id:             settingsRect
+            color:          qgcPal.window
+            anchors.fill:   parent
+            property real   _panelWidth:    width * 0.8
+
+            QGCFlickable {
+                id:                 settingsFlick
+                clip:               true
+                anchors.fill:       parent
+                anchors.margins:    ScreenTools.defaultFontPixelWidth
+                contentHeight:      mainLayout.height
+                contentWidth:       mainLayout.width
+
+                ColumnLayout {
+                    id:         mainLayout
+                    spacing:    _rowSpacing
+
+                    QGCGroupBox {
+                        title: qsTr("Login / Registration")
+
+                        ColumnLayout {
+                            spacing: _rowSpacing
+
+                            GridLayout {
+                                columns:        2
+                                columnSpacing:  _colSpacing
+                                rowSpacing:     _rowSpacing
+
+                                QGCLabel {text: qsTr("User Name:")}
+                                QGCTextField {
+                                    id:                     login
+                                    Layout.preferredWidth:  _secondColumnWidth
+                                    Layout.fillWidth:       true
+//                                    text:                   editingConfig.name
+                                    placeholderText:        qsTr("Enter name")
+                                }
+//                                FactTextField {
+//                                    id:             _userText
+//                                    fact:           _usernameFact
+//                                    width:          _editFieldWidth
+//                                    visible:        _usernameFact.visible
+//                                    Layout.fillWidth:    true
+//                                    Layout.preferredWidth:  _secondColumnWidth
+//                                    property Fact _usernameFact: QGroundControl.settingsManager.airLinkSettings.userName
+//                                }
+                                QGCLabel { text: qsTr("Password:") }
+                                QGCTextField {
+                                    id:                     password
+                                    Layout.preferredWidth:  _secondColumnWidth
+                                    Layout.fillWidth:       true
+//                                    text:                   editingConfig.name
+                                    placeholderText:        qsTr("Enter password")
+                                }
+//                                FactTextField {
+//                                    id:             _passText
+//                                    fact:           _passwordFact
+//                                    width:          _editFieldWidth
+//                                    visible:        _passwordFact.visible
+//                                    echoMode:       TextInput.Password
+//                                    Layout.fillWidth:    true
+//                                    Layout.minimumWidth: _editFieldWidth
+//                                    property Fact _passwordFact: QGroundControl.settingsManager.airLinkSettings.password
+//                                }
+                                QGCLabel {
+                                    text: "Forgot Your AirLink Password?"
+                                    font.underline: true
+                                    Layout.columnSpan:  2
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: Qt.openUrlExternally("https://air-link.space/forgot-pass")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    RowLayout {
+                        Layout.alignment:   Qt.AlignHCenter
+                        spacing:            _colSpacing
+
+                        QGCButton {
+                            width:      ScreenTools.defaultFontPixelWidth * 10
+                            text:       qsTr("Register")
+                            onClicked: Qt.openUrlExternally("https://air-link.space/registration")
+                        }
+                        QGCButton {
+                            width:      ScreenTools.defaultFontPixelWidth * 10
+                            text:       qsTr("OK")
+                            enabled:    nameField.text !== ""
+                            onClicked: {
+                                QGroundControl.airlinkManager.connect(_userText.text, _passText.text)
+
+                                if (isConnection)
+                                    closeAuthentification()
+                            }
+                        }
                         QGCButton {
                             width:      ScreenTools.defaultFontPixelWidth * 10
                             text:       qsTr("Cancel")
