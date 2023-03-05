@@ -26,6 +26,7 @@ public:
     virtual ~LinkConfiguration() {}
 
     Q_PROPERTY(QString          name                READ name           WRITE setName           NOTIFY nameChanged)
+    Q_PROPERTY(QString          password            READ password                               CONSTANT)
     Q_PROPERTY(LinkInterface*   link                READ link                                   NOTIFY linkChanged)
     Q_PROPERTY(LinkType         linkType            READ type                                   CONSTANT)
     Q_PROPERTY(bool             dynamic             READ isDynamic      WRITE setDynamic        NOTIFY dynamicChanged)
@@ -37,6 +38,7 @@ public:
     // Property accessors
 
     QString         name(void) const { return _name; }
+    QString         password(void) const { return _password; }
     LinkInterface*  link(void)  { return _link.lock().get(); }
 
     void            setName(const QString name);
@@ -63,6 +65,7 @@ public:
 
     bool isDynamic      () const{ return _dynamic; }     ///< Not persisted
     bool isAutoConnect  () const{ return _autoConnect; }
+    void setPassword    (const QString &password) { _password = password; };
 
     /*!
      *
@@ -174,6 +177,7 @@ protected:
 
 private:
     QString _name;
+    QString _password;
     bool    _dynamic;       ///< A connection added automatically and not persistent (unless it's edited).
     bool    _autoConnect;   ///< This connection is started automatically at boot
     bool    _highLatency;
