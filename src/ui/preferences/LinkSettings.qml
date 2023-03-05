@@ -25,11 +25,19 @@ Rectangle {
     anchors.fill:       parent
     anchors.margins:    ScreenTools.defaultFontPixelWidth
 
+//    Connections {
+//        target: LinkManager
+//        onConnectStatusChanged: {
+//            closeAirLinkRegistration()
+//        }
+//    }
+
     property var _currentSelection:     null
     property int _firstColumnWidth:     ScreenTools.defaultFontPixelWidth * 12
     property int _secondColumnWidth:    ScreenTools.defaultFontPixelWidth * 30
     property int _rowSpacing:           ScreenTools.defaultFontPixelHeight / 2
     property int _colSpacing:           ScreenTools.defaultFontPixelWidth / 2
+    property int _isConnection:         QGroundControl.linkManager.isConnectServer ? true : false
 
     QGCPalette {
         id:                 qgcPal
@@ -50,6 +58,11 @@ Rectangle {
 
     function openAirLinkRegistration() {
         settingsLoader.sourceComponent = airLinkRegistration
+    }
+
+    function closeAirLinkRegistration() {
+        settingsLoader.sourceComponent = null
+        QGroundControl.linkManager.createConfigurationAirLink()
     }
 
     Component.onDestruction: {
@@ -80,7 +93,7 @@ Rectangle {
                     width:                      _linkRoot.width * 0.5
                     text:                       object.name
                     autoExclusive:              true
-                    visible:                    !object.dynamic
+                    visible:                    true;//!object.dynamic
                     onClicked: {
                         checked = true
                         _currentSelection = object
@@ -99,7 +112,16 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         QGCButton {
             text:       qsTr("Login")
-            enabled:    true //_currentSelection && !_currentSelection.link
+            enabled: {
+                if (_isConnection) {
+                    closeAirLinkRegistration()
+                    // TODO write keepalive to control connection loss & return false
+                    return true
+                } else {
+                    return true
+                }
+            }
+//            enabled:    _currentSelection && !_currentSelection.link
             onClicked:  _linkRoot.openAirLinkRegistration()
         }
         QGCButton {
@@ -326,7 +348,7 @@ Rectangle {
                                 FactTextField {
                                     id:             _userText
                                     fact:           _usernameFact
-                                    width:          _editFieldWidth
+                                    width:          _secondColumnWidth
                                     visible:        _usernameFact.visible
                                     placeholderText:qsTr("Enter Login")
                                     Layout.fillWidth:    true
@@ -337,12 +359,12 @@ Rectangle {
                                 FactTextField {
                                     id:             _passText
                                     fact:           _passwordFact
-                                    width:          _editFieldWidth
+                                    width:          _secondColumnWidth
                                     visible:        _passwordFact.visible
                                     placeholderText:qsTr("Enter Password")
                                     echoMode:       TextInput.Password
                                     Layout.fillWidth:    true
-                                    Layout.minimumWidth: _editFieldWidth
+//                                    Layout.minimumWidth: _editFieldWidth
                                     property Fact _passwordFact: QGroundControl.settingsManager.appSettings.passAirLink
                                 }
                                 QGCLabel {
@@ -373,12 +395,12 @@ Rectangle {
                         QGCButton {
                             width:      ScreenTools.defaultFontPixelWidth * 10
                             text:       qsTr("OK")
-                            enabled:    nameField.text !== ""
+                            enabled:    _userText.text !== "" && _passText.text !== ""
                             onClicked: {
-                                QGroundControl.airlinkManager.connect(_userText.text, _passText.text)
+                                QGroundControl.linkManager.connectToAirLinkServer(_userText.text, _passText.text)
 
-                                if (isConnection)
-                                    closeAuthentification()
+                                if (_isConnection)
+                                    closeAirLinkRegistration()
                             }
                         }
                         QGCButton {

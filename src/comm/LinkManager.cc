@@ -810,6 +810,27 @@ void LinkManager::removeConfiguration(LinkConfiguration* config)
     }
 }
 
+void LinkManager::createConfigurationAirLink()
+{
+    QString pass = qgcApp()->toolbox()->settingsManager()->appSettings()->passAirLink()->rawValueString();
+
+    for (int i=0; i<_rgLinkConfigs.count(); i++) {
+        _qmlConfigurations.removeOne(_rgLinkConfigs[i].get());
+    }
+    _rgLinkConfigs.clear();
+
+    quint16 count = 1;
+    for (const auto &name : _vehiclesFromServer) {
+        UDPConfiguration* udp = new UDPConfiguration(name);
+        udp->setPassword(pass);
+        udp->addHost("air-link.space", 10000);
+        udp->setLocalPort(udp->localPort() + count++);
+        addConfiguration(udp);
+    }
+
+    saveLinkConfigurationList();
+}
+
 void LinkManager::_removeConfiguration(LinkConfiguration* config)
 {
     _qmlConfigurations.removeOne(config);
@@ -852,6 +873,44 @@ void LinkManager::startAutoConnectedLinks(void)
         if (conf->isAutoConnect())
             createConnectedLink(conf);
     }
+}
+
+void LinkManager::connectToAirLinkServer(const QString &login, const QString &pass)
+{
+//    if (_reply->isRunning())
+//        return;
+
+    _vehiclesFromServer.clear();
+    _isConnectServer = false;
+    emit connectStatusChanged();
+
+    QNetworkAccessManager *mgr = new QNetworkAccessManager(this);
+
+    const QUrl url("https://air-link.space/api/gs/getModems");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject obj;
+    obj["login"] = login;
+    obj["password"] = pass;
+    QJsonDocument doc(obj);
+    QByteArray data = doc.toJson();
+
+    _reply = mgr->post(request, data);
+
+    QObject::connect(_reply, &QNetworkReply::finished, [this](){
+        QByteArray ba = _reply->readAll();
+        if(_reply->error() == QNetworkReply::NoError
+                && QJsonDocument::fromJson(ba)["modems"].toArray().size()) {
+            _isConnectServer = true;
+            _parseAnswer(ba);
+        } else {
+            _isConnectServer = false;
+        }
+
+        emit connectStatusChanged();
+        _reply->deleteLater();
+    });
 }
 
 uint8_t LinkManager::allocateMavlinkChannel(void)
@@ -905,4 +964,15 @@ bool LinkManager::_isSerialPortConnected(void)
     }
 #endif
     return false;
+}
+
+void LinkManager::_parseAnswer(const QByteArray &ba)
+{
+    for (const auto &arr : QJsonDocument::fromJson(ba)["modems"].toArray()) {
+        _vehiclesFromServer.push_back(arr.toObject()["name"].toString());
+
+        qDebug() << arr.toObject()["name"].toString();
+        qDebug() << arr.toObject()["isOnline"].toBool();
+        qDebug() << arr.toObject()["imei"].toString();
+    }
 }

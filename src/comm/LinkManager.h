@@ -12,6 +12,7 @@
 #include <QList>
 #include <QMultiMap>
 #include <QMutex>
+#include <QNetworkReply>
 
 #include <limits>
 
@@ -58,6 +59,7 @@ public:
     Q_PROPERTY(QStringList          serialBaudRates         READ serialBaudRates        CONSTANT)
     Q_PROPERTY(QStringList          serialPortStrings       READ serialPortStrings      NOTIFY commPortStringsChanged)
     Q_PROPERTY(QStringList          serialPorts             READ serialPorts            NOTIFY commPortsChanged)
+    Q_PROPERTY(bool                 isConnectServer         READ isConnectServer        NOTIFY connectStatusChanged)
 
     /// Create/Edit Link Configuration
     Q_INVOKABLE LinkConfiguration*  createConfiguration         (int type, const QString& name);
@@ -66,6 +68,8 @@ public:
     Q_INVOKABLE bool                endConfigurationEditing     (LinkConfiguration* config, LinkConfiguration* editedConfig);
     Q_INVOKABLE bool                endCreateConfiguration      (LinkConfiguration* config);
     Q_INVOKABLE void                removeConfiguration         (LinkConfiguration* config);
+    Q_INVOKABLE void                connectToAirLinkServer      (const QString &login, const QString &pass);
+    Q_INVOKABLE void                createConfigurationAirLink  (void);
 
     // Called to signal app shutdown. Disconnects all links while turning off auto-connect.
     Q_INVOKABLE void shutdown(void);
@@ -81,6 +85,7 @@ public:
     QStringList                     serialBaudRates     (void);
     QStringList                     serialPortStrings   (void);
     QStringList                     serialPorts         (void);
+    bool                            isConnectServer     (void) { return _isConnectServer; }
 
     void loadLinkConfigurationList();
     void saveLinkConfigurationList();
@@ -129,13 +134,14 @@ public:
 
     SharedLinkConfigurationPtr addConfiguration(LinkConfiguration* config);
 
-    void startAutoConnectedLinks(void);
+    void startAutoConnectedLinks(void);    
 
     static const char*  settingsGroup;
 
 signals:
     void commPortStringsChanged();
     void commPortsChanged();
+    void connectStatusChanged();
 
 private slots:
     void _linkDisconnected  (void);
@@ -150,6 +156,7 @@ private:
     void                _addZeroConfAutoConnectLink (void);
     void                _addMAVLinkForwardingLink   (void);
     bool                _isSerialPortConnected      (void);
+    void                _parseAnswer                (const QByteArray &ba);
 
 #ifndef NO_SERIAL_LINK
     bool                _portAlreadyConnected       (const QString& portName);
@@ -173,6 +180,10 @@ private:
     QMap<QString, int>                  _autoconnectPortWaitList;               ///< key: QGCSerialPortInfo::systemLocation, value: wait count
     QStringList                         _commPortList;
     QStringList                         _commPortDisplayList;
+
+    bool                                _isConnectServer {false};
+    QNetworkReply*                      _reply;
+    std::vector<QString>                _vehiclesFromServer;
 
 #ifndef NO_SERIAL_LINK
     QList<SerialLink*>                  _activeLinkCheckList;                   ///< List of links we are waiting for a vehicle to show up on
