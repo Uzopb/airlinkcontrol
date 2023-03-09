@@ -70,6 +70,7 @@ public:
     Q_INVOKABLE void                removeConfiguration         (LinkConfiguration* config);
     Q_INVOKABLE void                connectToAirLinkServer      (const QString &login, const QString &pass);
     Q_INVOKABLE void                createConfigurationAirLink  (void);
+    Q_INVOKABLE void                sendLoginMsgToAirLink      (LinkInterface* link, const QString &login);
 
     // Called to signal app shutdown. Disconnects all links while turning off auto-connect.
     Q_INVOKABLE void shutdown(void);
@@ -156,7 +157,7 @@ private:
     void                _addZeroConfAutoConnectLink (void);
     void                _addMAVLinkForwardingLink   (void);
     bool                _isSerialPortConnected      (void);
-    void                _parseAnswer                (const QByteArray &ba);
+    void                _parseAnswer                (const QByteArray &ba);    
 
 #ifndef NO_SERIAL_LINK
     bool                _portAlreadyConnected       (const QString& portName);
@@ -183,7 +184,7 @@ private:
 
     bool                                _isConnectServer {false};
     QNetworkReply*                      _reply;
-    std::vector<QString>                _vehiclesFromServer;
+    QMap<QString, bool>                 _vehiclesFromServer;
 
 #ifndef NO_SERIAL_LINK
     QList<SerialLink*>                  _activeLinkCheckList;                   ///< List of links we are waiting for a vehicle to show up on

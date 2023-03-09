@@ -24,6 +24,7 @@
 #include "TCPLink.h"
 #include "SettingsManager.h"
 #include "LogReplayLink.h"
+#include "common/mavlink.h"
 #ifdef QGC_ENABLE_BLUETOOTH
 #include "BluetoothLink.h"
 #endif
@@ -820,12 +821,14 @@ void LinkManager::createConfigurationAirLink()
     _rgLinkConfigs.clear();
 
     quint16 count = 1;
-    for (const auto &name : _vehiclesFromServer) {
-        UDPConfiguration* udp = new UDPConfiguration(name);
+    foreach (const QString &key, _vehiclesFromServer.keys()) {
+        UDPConfiguration* udp = new UDPConfiguration(key);
         udp->setPassword(pass);
+        udp->setOnline(_vehiclesFromServer.value(key));
         udp->addHost("air-link.space", 10000);
         udp->setLocalPort(udp->localPort() + count++);
-        addConfiguration(udp);
+        udp->setLink((SharedLinkInterfacePtr)addConfiguration(udp)->link());
+//        addConfiguration(udp);
     }
 
     saveLinkConfigurationList();
@@ -969,10 +972,33 @@ bool LinkManager::_isSerialPortConnected(void)
 void LinkManager::_parseAnswer(const QByteArray &ba)
 {
     for (const auto &arr : QJsonDocument::fromJson(ba)["modems"].toArray()) {
-        _vehiclesFromServer.push_back(arr.toObject()["name"].toString());
+        _vehiclesFromServer.insert(arr.toObject()["name"].toString(),
+                                   arr.toObject()["isOnline"].toBool());
 
-        qDebug() << arr.toObject()["name"].toString();
-        qDebug() << arr.toObject()["isOnline"].toBool();
-        qDebug() << arr.toObject()["imei"].toString();
+//        qDebug() << arr.toObject()["name"].toString();
+//        qDebug() << arr.toObject()["isOnline"].toBool();
+//        qDebug() << arr.toObject()["imei"].toString();
     }
+}
+
+void LinkManager::sendLoginMsgToAirLink(LinkInterface* link, const QString &login)
+{
+    mavlink_login_airlink_t auth;
+    uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+    mavlink_message_t mavmsg;
+
+    const QString pass = qgcApp()->toolbox()->settingsManager()->appSettings()->passAirLink()->rawValueString();
+
+    memset(&auth.login, 0, sizeof(auth.login));
+    memset(&auth.password, 0, sizeof(auth.password));
+    strcpy(auth.login, login.toUtf8().constData());
+    strcpy(auth.password, pass.toUtf8().constData());
+
+    mavlink_msg_login_airlink_pack(0, 0, &mavmsg, auth.login, auth.password);
+    uint16_t len = mavlink_msg_to_send_buffer(buffer, &mavmsg);
+    link->writeBytesThreadSafe((const char *)buffer, len);
+
+    qDebug() << (link->isConnected() ? "Connected" : "Not connected");
+    qDebug() << login.toUtf8().constData();
+    qDebug() << pass.toUtf8().constData();
 }

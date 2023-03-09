@@ -91,13 +91,20 @@ Rectangle {
                 delegate: QGCButton {
                     anchors.horizontalCenter:   settingsColumn.horizontalCenter
                     width:                      _linkRoot.width * 0.5
-                    text:                       object.name
                     autoExclusive:              true
                     visible:                    true;//!object.dynamic
                     onClicked: {
                         checked = true
                         _currentSelection = object
                         console.log("clicked", object, object.link)
+                        buttonRow.update()
+                    }
+                    Text {
+                        anchors.centerIn:   parent
+                        text:               object.online ? object.name + " (online)" : object.name + " (offline)"
+                        color:              object.online ? qgcPal.colorGreen : qgcPal.colorRed
+//                        font.family:        ScreenTools.fixedFontFamily
+//                        font.pixelSize:     ScreenTools.defaul
                     }
                 }
             }
@@ -158,7 +165,10 @@ Rectangle {
         QGCButton {
             text:       qsTr("Connect")
             enabled:    _currentSelection && !_currentSelection.link
-            onClicked:  QGroundControl.linkManager.createConnectedLink(_currentSelection)
+            onClicked:  {
+                QGroundControl.linkManager.createConnectedLink(_currentSelection)
+                QGroundControl.linkManager.sendLoginMsgToAirLink(_currentSelection.link, _currentSelection.name)
+            }
         }
         QGCButton {
             text:       qsTr("Disconnect")
