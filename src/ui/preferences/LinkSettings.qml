@@ -25,19 +25,49 @@ Rectangle {
     anchors.fill:       parent
     anchors.margins:    ScreenTools.defaultFontPixelWidth
 
-//    Connections {
-//        target: LinkManager
-//        onConnectStatusChanged: {
-//            closeAirLinkRegistration()
-//        }
-//    }
-
     property var _currentSelection:     null
     property int _firstColumnWidth:     ScreenTools.defaultFontPixelWidth * 12
     property int _secondColumnWidth:    ScreenTools.defaultFontPixelWidth * 30
     property int _rowSpacing:           ScreenTools.defaultFontPixelHeight / 2
     property int _colSpacing:           ScreenTools.defaultFontPixelWidth / 2
-    property int _isConnection:         QGroundControl.linkManager.isConnectServer ? true : false
+    property int _isConnectionServer: {
+        if (!QGroundControl.linkManager.isConnectServer) {
+            connectingDialog.visible = true
+            return false
+        }
+        return true
+    }
+    property int _isAuthServer: {
+        if (QGroundControl.linkManager.isAuthServer) {
+            closeAirLinkRegistration()
+            return true
+        } else {
+            loginDialog.visible = true
+            return false
+        }
+    }
+
+    MessageDialog {
+        id:         loginDialog
+        visible:    false
+        icon:       StandardIcon.Warning
+        standardButtons: StandardButton.Yes
+        title:      qsTr("AirLink Authentification")
+        text:       qsTr("Wrong login or password. Please check it and try again!")
+
+        onYes: loginDialog.visible = false
+    }
+
+    MessageDialog {
+        id:         connectingDialog
+        visible:    false
+        icon:       StandardIcon.Warning
+        standardButtons: StandardButton.Yes
+        title:      qsTr("AirLink Authentification")
+        text:       qsTr("No network connection. Please check it and try again!")
+
+        onYes: loginDialog.visible = false
+    }
 
     QGCPalette {
         id:                 qgcPal
@@ -101,8 +131,8 @@ Rectangle {
                     }
                     Text {
                         anchors.centerIn:   parent
-                        text:               object.online ? object.name + " (online)" : object.name + " (offline)"
-                        color:              object.online ? qgcPal.colorGreen : qgcPal.colorRed
+                        text:               object.online ? object.name + " (online)" : object.name
+                        color:              object.online ? qgcPal.colorGreen : qgcPal.buttonText
 //                        font.family:        ScreenTools.fixedFontFamily
 //                        font.pixelSize:     ScreenTools.defaul
                     }
@@ -119,16 +149,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         QGCButton {
             text:       qsTr("Login")
-            enabled: {
-                if (_isConnection) {
-                    closeAirLinkRegistration()
-                    // TODO write keepalive to control connection loss & return false
-                    return true
-                } else {
-                    return true
-                }
-            }
-//            enabled:    _currentSelection && !_currentSelection.link
+            enabled:    true
             onClicked:  _linkRoot.openAirLinkRegistration()
         }
         QGCButton {
@@ -382,10 +403,10 @@ Rectangle {
                                     font.underline: true
                                     Layout.columnSpan:  2
                                     MouseArea {
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: Qt.openUrlExternally("https://air-link.space/forgot-pass")
+                                        anchors.fill:   parent
+                                        hoverEnabled:   true
+                                        cursorShape:    Qt.PointingHandCursor
+                                        onClicked:      Qt.openUrlExternally("https://air-link.space/forgot-pass")
                                     }
                                 }
                             }
@@ -400,18 +421,13 @@ Rectangle {
                         QGCButton {
                             width:      ScreenTools.defaultFontPixelWidth * 10
                             text:       qsTr("Register")
-                            onClicked: Qt.openUrlExternally("https://air-link.space/registration")
+                            onClicked:  Qt.openUrlExternally("https://air-link.space/registration")
                         }
                         QGCButton {
                             width:      ScreenTools.defaultFontPixelWidth * 10
                             text:       qsTr("OK")
                             enabled:    _userText.text !== "" && _passText.text !== ""
-                            onClicked: {
-                                QGroundControl.linkManager.connectToAirLinkServer(_userText.text, _passText.text)
-
-                                if (_isConnection)
-                                    closeAirLinkRegistration()
-                            }
+                            onClicked:  QGroundControl.linkManager.connectToAirLinkServer(_userText.text, _passText.text)
                         }
                         QGCButton {
                             width:      ScreenTools.defaultFontPixelWidth * 10

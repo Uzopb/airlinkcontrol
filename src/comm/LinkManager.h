@@ -60,6 +60,7 @@ public:
     Q_PROPERTY(QStringList          serialPortStrings       READ serialPortStrings      NOTIFY commPortStringsChanged)
     Q_PROPERTY(QStringList          serialPorts             READ serialPorts            NOTIFY commPortsChanged)
     Q_PROPERTY(bool                 isConnectServer         READ isConnectServer        NOTIFY connectStatusChanged)
+    Q_PROPERTY(bool                 isAuthServer            READ isAuthServer           NOTIFY authStatusChanged)
 
     /// Create/Edit Link Configuration
     Q_INVOKABLE LinkConfiguration*  createConfiguration         (int type, const QString& name);
@@ -87,6 +88,7 @@ public:
     QStringList                     serialPortStrings   (void);
     QStringList                     serialPorts         (void);
     bool                            isConnectServer     (void) { return _isConnectServer; }
+    bool                            isAuthServer        (void) { return _isAuthServer; }
 
     void loadLinkConfigurationList();
     void saveLinkConfigurationList();
@@ -143,9 +145,11 @@ signals:
     void commPortStringsChanged();
     void commPortsChanged();
     void connectStatusChanged();
+    void authStatusChanged();
 
 private slots:
     void _linkDisconnected  (void);
+    void _onlineStatusUpdate  (void);
 
 private:
     QmlObjectListModel* _qmlLinkConfigurations      (void) { return &_qmlConfigurations; }
@@ -157,7 +161,9 @@ private:
     void                _addZeroConfAutoConnectLink (void);
     void                _addMAVLinkForwardingLink   (void);
     bool                _isSerialPortConnected      (void);
-    void                _parseAnswer                (const QByteArray &ba);    
+    void                _parseAnswer                (const QByteArray &ba);
+    void                _processReplyAirlinkServer  (QNetworkReply &reply);
+    void                _updateAirLinkState         (const QString &login, const QString &pass);
 
 #ifndef NO_SERIAL_LINK
     bool                _portAlreadyConnected       (const QString& portName);
@@ -169,6 +175,14 @@ private:
     QString                             _connectionsSuspendedReason;                ///< User visible reason for suspension
     QTimer                              _portListTimer;
     uint32_t                            _mavlinkChannelsUsedBitMask;
+
+    QTimer                              _onlineStatusTimer;
+    uint32_t                            _onlineTimeout {100000};
+
+    QMutex                              _mutex;
+
+    QNetworkReply*                      _reply;
+    QNetworkReply*                      _replyOnline;
 
     AutoConnectSettings*                _autoConnectSettings;
     MAVLinkProtocol*                    _mavlinkProtocol;
@@ -182,8 +196,11 @@ private:
     QStringList                         _commPortList;
     QStringList                         _commPortDisplayList;
 
-    bool                                _isConnectServer {false};
-    QNetworkReply*                      _reply;
+    bool                                _isConnectServer;
+    bool                                _isAuthServer;
+    bool                                _isAuth;
+    bool                                _isOnlineStatusRequest;
+    bool                                _isCreatedConfig {false};
     QMap<QString, bool>                 _vehiclesFromServer;
 
 #ifndef NO_SERIAL_LINK

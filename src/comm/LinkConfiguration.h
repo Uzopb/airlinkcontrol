@@ -68,7 +68,7 @@ public:
     bool isDynamic      () const{ return _dynamic; }     ///< Not persisted
     bool isAutoConnect  () const{ return _autoConnect; }
     void setPassword    (const QString &password) { _password = password; };
-    void setOnline      (const bool &isOnline) { _isOnline = isOnline; };
+    void setOnline      (const bool &isOnline) { _isOnline = isOnline; emit onlineChanged(); };
 
     /*!
      *
@@ -170,7 +170,7 @@ public:
 
 signals:
     void nameChanged        (const QString& name);
-    void dynamicChanged     ();
+    void dynamicChanged     ();    
     void onlineChanged      ();
     void autoConnectChanged ();
     void highLatencyChanged ();
